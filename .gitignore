@@ -1,0 +1,7 @@
+halo.env
+*.env
+!halo.env.example
+probe-output/
+run.json
+run.csv
+node_modules/

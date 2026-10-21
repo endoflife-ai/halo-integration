@@ -1,0 +1,15 @@
+{
+  "name": "endoflife-ai-halo-integration",
+  "version": "0.1.0",
+  "description": "endoflife.ai EOL Risk for HaloPSA: end-of-life dates, EOL Risk Score and exploited-and-unpatchable flags on Halo assets",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "test": "node --test \"test/*.test.mjs\"",
+    "probe": "node probe.mjs",
+    "dry-run": "node sync.mjs --dry-run"
+  },
+  "homepage": "https://endoflife.ai/halo"
+}
