@@ -7,6 +7,14 @@
 // `fetchImpl` is injectable for the tests.
 const UA = 'endoflife-ai-halo-integration/0.1';
 
+export function keyError(status, hadKey) {
+  const e = new Error(hadKey
+    ? `endoflife.ai refused the API key (HTTP ${status}). Check EOL_API_KEY in your env file; keys and limits: https://endoflife.ai/api`
+    : `endoflife.ai needs an API key from November 16, 2026 (HTTP ${status}). Get a free key (150 requests a day, no expiry) at https://endoflife.ai/api#free-key and set EOL_API_KEY in your env file.`);
+  e.code = 'EOL_KEY';
+  return e;
+}
+
 export class EolClient {
   constructor({ base = 'https://api.endoflife.ai', apiKey = '', feedUrl = 'https://endoflife.ai/exploited-and-unpatchable.json', fetchImpl = globalThis.fetch, batchSize = 5, log = () => {} } = {}) {
     this.base = base.replace(/\/+$/, '');
@@ -23,6 +31,7 @@ export class EolClient {
   headers(extra = {}) { return { 'User-Agent': UA, Accept: 'application/json', ...(this.apiKey ? { 'X-API-Key': this.apiKey } : {}), ...extra }; }
 
   async getJson(url, init = {}) {
+    let refused = 0;
     for (let attempt = 0; attempt < 2; attempt++) {
       try {
         this.stats.calls++;
@@ -30,10 +39,14 @@ export class EolClient {
         const text = await r.text();
         if (r.ok) return text ? JSON.parse(text) : null;
         if (r.status === 404) return null;
+        // From 2026-11-16 the API refuses requests without a valid key. Stop the
+        // run instead of marking every asset lookup-failed.
+        if (r.status === 401 || r.status === 403) { refused = r.status; break; }
         this.log(`${url}: HTTP ${r.status}${attempt ? '' : ', retrying'}`);
       } catch (e) { this.log(`${url}: ${e.message}${attempt ? '' : ', retrying'}`); }
       await new Promise(r => setTimeout(r, 800));
     }
+    if (refused) throw keyError(refused, !!this.apiKey);
     return null;
   }
 

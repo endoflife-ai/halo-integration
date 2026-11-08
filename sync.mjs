@@ -210,5 +210,12 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
   const log = (m) => console.log(m);
   const halo = new HaloClient(cfg, { log });
   const eol = new EolClient({ base: cfg.eolBase, apiKey: cfg.eolApiKey, log });
-  await run(opts, { halo, eol, log });
+  if (!cfg.eolApiKey) log('note: EOL_API_KEY is not set; endoflife.ai requires a key from 2026-11-16 (free key: https://endoflife.ai/api#free-key)');
+  try {
+    await run(opts, { halo, eol, log });
+  } catch (e) {
+    if (e.code !== 'EOL_KEY') throw e;
+    console.error(e.message);
+    process.exit(3);
+  }
 }

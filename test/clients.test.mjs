@@ -101,3 +101,16 @@ test('cycleMatches handles exact cycles and "a to b" ranges', () => {
 test('parseEnv ignores comments and quotes', () => {
   assert.deepEqual(parseEnv('# c\nA=1\nB="two words"\n\nbad\n'), { A: '1', B: 'two words' });
 });
+
+test('EolClient stops with a clear message when the API refuses a keyless call (401), without retrying', async () => {
+  const fetch = fakeFetch([res(401, { error: 'key required' })]);
+  const e = new EolClient({ fetchImpl: fetch });
+  await assert.rejects(e.status('nodejs', '18'), (err) => err.code === 'EOL_KEY' && /free key/.test(err.message));
+  assert.equal(fetch.calls.length, 1);
+});
+
+test('EolClient names the key as the problem when a configured key is refused (403)', async () => {
+  const fetch = fakeFetch([res(403, { error: 'forbidden' })]);
+  const e = new EolClient({ apiKey: 'K', fetchImpl: fetch });
+  await assert.rejects(e.status('nodejs', '18'), (err) => err.code === 'EOL_KEY' && /refused the API key/.test(err.message));
+});
